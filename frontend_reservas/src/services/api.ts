@@ -7,9 +7,9 @@ interface ApiResponse<T> {
 }
 
 class ApiClient {
-  private client: any;
-  private baseURL = `${window.location.protocol}//${window.location.hostname}:8000/api/reservas/`;
-  private tokenKey = 'auth_token';
+  private readonly client: any;
+  private readonly baseURL = '/api/reservas/';
+  private readonly tokenKey = 'auth_token';
 
   constructor() {
     this.client = axios.create({
@@ -38,18 +38,28 @@ class ApiClient {
 
   private handleError(error: any): Promise<never> {
     let errorMessage = 'Error desconocido en la solicitud';
+    let errorDetails: any = {};
 
     if (error.response) {
+      errorDetails = error.response.data;
       errorMessage = error.response.data?.message || 
+                    error.response.data?.detail ||
                     error.response.statusText || 
                     `Error ${error.response.status}`;
+      // Si hay errores de validación (dict), incluirlos
+      if (typeof error.response.data === 'object' && error.response.data !== null) {
+        const keys = Object.keys(error.response.data);
+        if (keys.length > 0 && typeof error.response.data[keys[0]] === 'string') {
+          errorMessage = `${error.response.status}: ${keys.map(k => `${k}: ${error.response.data[k]}`).join(', ')}`;
+        }
+      }
     } else if (error.request) {
       errorMessage = 'Sin respuesta del servidor';
     } else if (error.message) {
       errorMessage = error.message;
     }
 
-    console.error('API Error:', errorMessage);
+    console.error('🔴 API Error:', { message: errorMessage, details: errorDetails, error });
     return Promise.reject(new Error(errorMessage));
   }
 
@@ -132,7 +142,7 @@ class ApiClient {
 
   async updateMesa(id: number, data: any): Promise<ApiResponse<any>> {
     try {
-      const response = await this.client.put(`mesas/${id}/`, data);
+      const response = await this.client.patch(`mesas/${id}/`, data);
       return {
         success: true,
         data: response.data,
@@ -192,10 +202,41 @@ class ApiClient {
 
   async updateHorario(id: number, data: any): Promise<ApiResponse<any>> {
     try {
-      const response = await this.client.put(`horarios/${id}/`, data);
+      console.log(`📨 PUT /horarios/${id}/ with data:`, data);
+      const response = await this.client.patch(`horarios/${id}/`, data);
+      console.log(`✅ PUT /horarios/${id}/ success:`, response.data);
       return {
         success: true,
         data: response.data,
+      };
+    } catch (error: any) {
+      let errorMessage = (error as Error).message;
+      if (error?.response?.data) {
+        console.error(`🔴 Server error response:`, error.response.data);
+        // Convertir objeto de errores en string legible
+        if (typeof error.response.data === 'object') {
+          const errorObj = error.response.data;
+          const errorLines = Object.entries(errorObj)
+            .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+            .join(' | ');
+          errorMessage = errorLines || JSON.stringify(error.response.data);
+        } else {
+          errorMessage = String(error.response.data);
+        }
+      }
+      console.error(`❌ PUT /horarios/${id}/ failed:`, errorMessage);
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  }
+
+  async deleteHorario(id: number): Promise<ApiResponse<void>> {
+    try {
+      await this.client.delete(`horarios/${id}/`);
+      return {
+        success: true,
       };
     } catch (error) {
       return {
@@ -252,7 +293,7 @@ class ApiClient {
 
   async updateReserva(id: number, data: any): Promise<ApiResponse<any>> {
     try {
-      const response = await this.client.put(`reservas/${id}/`, data);
+      const response = await this.client.patch(`reservas/${id}/`, data);
       return {
         success: true,
         data: response.data,
@@ -329,7 +370,7 @@ class ApiClient {
 
   async updateMenuItem(id: number, data: any): Promise<ApiResponse<any>> {
     try {
-      const response = await this.client.put(`menu/${id}/`, data);
+      const response = await this.client.patch(`menu/${id}/`, data);
       return {
         success: true,
         data: response.data,
@@ -438,7 +479,7 @@ class ApiClient {
 
   async updateOrden(id: number, data: any): Promise<ApiResponse<any>> {
     try {
-      const response = await this.client.put(`ordenes/${id}/`, data);
+      const response = await this.client.patch(`ordenes/${id}/`, data);
       return {
         success: true,
         data: response.data,
