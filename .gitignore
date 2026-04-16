@@ -48,3 +48,6 @@ dist/
 # vitest
 .coverage
 coverage/
+
+# Markdown files (documentation for AI)
+*.md
