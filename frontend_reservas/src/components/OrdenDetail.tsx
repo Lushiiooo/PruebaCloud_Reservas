@@ -16,7 +16,7 @@ function OrdenDetail() {
   const cargarOrden = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.getOrden(parseInt(id!));
+      const response = await apiClient.getOrden(Number.parseInt(id || '0'));
       console.log('📥 Respuesta orden:', response);
       if (response.success && response.data) {
         setOrden(response.data);
@@ -174,13 +174,13 @@ function OrdenDetail() {
                 <tbody>
                   {orden.items && Array.isArray(orden.items) && orden.items.map((item: any, index: number) => {
                     const precioUnitario = typeof item.precio_unitario === 'string' 
-                      ? parseFloat(item.precio_unitario) 
+                      ? Number.parseFloat(item.precio_unitario) 
                       : item.precio_unitario;
-                    const cantidad = parseInt(item.cantidad) || 1;
+                    const cantidad = Number.parseInt(item.cantidad) || 1;
                     const subtotal = precioUnitario * cantidad;
                     
                     return (
-                      <tr key={index} className="border-b hover:bg-gray-50">
+                      <tr key={item.id || index} className="border-b hover:bg-gray-50">
                         <td className="px-4 py-3">
                           <div className="font-semibold text-gray-800">{item.item_menu?.nombre || 'Producto'}</div>
                           <div className="text-sm text-gray-600">{item.item_menu?.categoria || 'Sin categoría'}</div>
@@ -207,11 +207,11 @@ function OrdenDetail() {
             <div className="w-full md:w-80">
               <div className="flex justify-between items-center text-lg mb-2">
                 <span className="text-gray-600">Subtotal:</span>
-                <span className="text-gray-800">${parseFloat(orden.precio_total).toFixed(2)}</span>
+                <span className="text-gray-800">${Number.parseFloat(orden.precio_total).toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center text-2xl font-bold border-t pt-3">
                 <span className="text-gray-800">Total:</span>
-                <span className="text-blue-600">${parseFloat(orden.precio_total).toFixed(2)}</span>
+                <span className="text-blue-600">${Number.parseFloat(orden.precio_total).toFixed(2)}</span>
               </div>
             </div>
           </div>

@@ -37,7 +37,7 @@ function ReservaList() {
       // Si es guest, intenta cargar la reserva que acaba de crear
       const guestReservaId = sessionStorage.getItem('guestReservaId');
       if (guestReservaId) {
-        fetchGuestReserva(parseInt(guestReservaId));
+        fetchGuestReserva(Number.parseInt(guestReservaId));
       }
     }
   }, []);
@@ -107,6 +107,72 @@ function ReservaList() {
     } catch (err) {
       setError((err as Error).message);
     }
+  };
+
+  const renderReservasContent = () => {
+    if (loading) {
+      return (
+        <div className="text-center py-16">
+          <p className="text-gray-600 text-lg">Cargando reservas...</p>
+        </div>
+      );
+    }
+
+    if (reservas.length === 0) {
+      return (
+        <div className="text-center py-16 bg-gray-50 rounded-lg">
+          <p className="text-gray-600 text-lg mb-6">No tienes reservas aún</p>
+          <Link
+            to="/reservas/nueva"
+            className="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 font-semibold"
+          >
+            Crear tu primera reserva
+          </Link>
+        </div>
+      );
+    }
+
+    return (
+      <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <table className="w-full">
+          <thead className="bg-gray-100 border-b border-gray-200">
+            <tr>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Cliente</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Teléfono</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Fecha</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Hora</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Mesa</th>
+              <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reservas.map((reserva, index) => (
+              <tr key={reserva.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-b border-gray-200 hover:bg-blue-50 transition`}>
+                <td className="px-6 py-4 text-gray-900 font-medium">{reserva.nombre_cliente}</td>
+                <td className="px-6 py-4 text-gray-600">{reserva.telefono}</td>
+                <td className="px-6 py-4 text-gray-600">{reserva.fecha}</td>
+                <td className="px-6 py-4 text-gray-600">{reserva.hora}</td>
+                <td className="px-6 py-4 text-gray-600">Mesa {reserva.mesa_numero}</td>
+                <td className="px-6 py-4 text-center">
+                  <Link
+                    to={`/reservas/${reserva.id}/editar`}
+                    className="text-blue-600 hover:text-blue-800 font-medium mr-4"
+                  >
+                    Editar
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(reserva.id)}
+                    className="text-red-600 hover:text-red-800 font-medium"
+                  >
+                    Eliminar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
   };
 
   // Si no está autenticado, mostrar solo la reserva que acaba de crear
@@ -200,61 +266,7 @@ function ReservaList() {
           </div>
         )}
 
-        {loading ? (
-          <div className="text-center py-16">
-            <p className="text-gray-600 text-lg">Cargando reservas...</p>
-          </div>
-        ) : reservas.length === 0 ? (
-          <div className="text-center py-16 bg-gray-50 rounded-lg">
-            <p className="text-gray-600 text-lg mb-6">No tienes reservas aún</p>
-            <Link
-              to="/reservas/nueva"
-              className="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 font-semibold"
-            >
-              Crear tu primera reserva
-            </Link>
-          </div>
-        ) : (
-          <div className="overflow-x-auto rounded-lg border border-gray-200">
-            <table className="w-full">
-              <thead className="bg-gray-100 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Cliente</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Teléfono</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Fecha</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Hora</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Mesa</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reservas.map((reserva, index) => (
-                  <tr key={reserva.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-b border-gray-200 hover:bg-blue-50 transition`}>
-                    <td className="px-6 py-4 text-gray-900 font-medium">{reserva.nombre_cliente}</td>
-                    <td className="px-6 py-4 text-gray-600">{reserva.telefono}</td>
-                    <td className="px-6 py-4 text-gray-600">{reserva.fecha}</td>
-                    <td className="px-6 py-4 text-gray-600">{reserva.hora}</td>
-                    <td className="px-6 py-4 text-gray-600">Mesa {reserva.mesa_numero}</td>
-                    <td className="px-6 py-4 text-center">
-                      <Link
-                        to={`/reservas/${reserva.id}/editar`}
-                        className="text-blue-600 hover:text-blue-800 font-medium mr-4"
-                      >
-                        Editar
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(reserva.id)}
-                        className="text-red-600 hover:text-red-800 font-medium"
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        {renderReservasContent()}
 
       <ConfirmModal
         isOpen={showConfirm}

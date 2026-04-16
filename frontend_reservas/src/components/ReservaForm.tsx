@@ -104,18 +104,24 @@ function ReservaForm() {
   const fetchReserva = async () => {
     try {
       console.log('📡 Cargando reserva ID:', id);
-      const response = await apiClient.getReserva(parseInt(id!));
+      const response = await apiClient.getReserva(Number.parseInt(id || '0'));
       console.log('📥 Respuesta reserva:', response);
       if (response.success && response.data) {
         const { nombre_cliente, telefono, fecha, hora, mesa, estado } = response.data;
-        setFormData({
-          nombre_cliente,
-          telefono,
-          fecha,
-          hora,
-          mesa,
-          estado,
-        });
+        setFormData(prev => ({
+          ...prev,
+          nombre_cliente: nombre_cliente || '',
+          telefono: telefono || '',
+          fecha: fecha || '',
+          hora: hora || '',
+          mesa: mesa || 0,
+          estado: estado || 'Pendiente',
+        }));
+        // Cargar horario del día
+        if (fecha) {
+          const nuevoHorario = getHorarioForDate(fecha);
+          setHorarioHoy(nuevoHorario);
+        }
         console.log('✅ Reserva cargada');
       } else {
         console.error('❌ Error:', response.error);
@@ -125,53 +131,85 @@ function ReservaForm() {
     }
   };
 
+  const validateNombreCliente = (): string | null => {
+    if (!formData.nombre_cliente.trim()) {
+      return 'El nombre es obligatorio';
+    }
+    return null;
+  };
+
+  const validateTelefono = (): string | null => {
+    if (!formData.telefono.trim()) {
+      return 'El teléfono es obligatorio';
+    }
+    if (formData.telefono.length < 7) {
+      return 'El teléfono debe tener al menos 7 dígitos';
+    }
+    return null;
+  };
+
+  const validateFecha = (): string | null => {
+    if (!formData.fecha) {
+      return 'La fecha es obligatoria';
+    }
+    return null;
+  };
+
+  const validateHora = (): string | null => {
+    if (!formData.hora) {
+      return 'La hora es obligatoria';
+    }
+
+    const horario = getHorarioForDate(formData.fecha);
+    if (horario?.cerrado) {
+      return '🔒 El restaurante está cerrado este día';
+    }
+    
+    if (horario) {
+      const horaReserva = formData.hora;
+      const horaApertura = horario.hora_apertura;
+      const horaCierre = horario.hora_cierre;
+
+      if (horaReserva < horaApertura) {
+        return `⏰ Antes de la apertura (${horaApertura})`;
+      }
+      if (horaReserva >= horaCierre) {
+        return `⏰ Después del cierre (${horaCierre})`;
+      }
+
+      const [hora, minutos] = horaReserva.split(':').map(Number);
+      const horaPlusDos = `${String(hora + 2).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
+      if (horaPlusDos > horaCierre) {
+        return `⏱️ La reserva de 2h sobrepasa cierre (${horaCierre})`;
+      }
+    }
+    return null;
+  };
+
+  const validateMesa = (): string | null => {
+    if (!formData.mesa || formData.mesa === 0) {
+      return 'Debe seleccionar una mesa';
+    }
+    return null;
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.nombre_cliente.trim()) {
-      newErrors.nombre_cliente = 'El nombre es obligatorio';
-    }
+    const nombreError = validateNombreCliente();
+    if (nombreError) newErrors.nombre_cliente = nombreError;
 
-    if (!formData.telefono.trim()) {
-      newErrors.telefono = 'El teléfono es obligatorio';
-    } else if (formData.telefono.length < 7) {
-      newErrors.telefono = 'El teléfono debe tener al menos 7 dígitos';
-    }
+    const telefonoError = validateTelefono();
+    if (telefonoError) newErrors.telefono = telefonoError;
 
-    if (!formData.fecha) {
-      newErrors.fecha = 'La fecha es obligatoria';
-    }
+    const fechaError = validateFecha();
+    if (fechaError) newErrors.fecha = fechaError;
 
-    if (!formData.hora) {
-      newErrors.hora = 'La hora es obligatoria';
-    } else {
-      const horario = getHorarioForDate(formData.fecha);
-      if (horario?.cerrado) {
-        newErrors.hora = '🔒 El restaurante está cerrado este día';
-      } else if (horario) {
-        const horaReserva = formData.hora;
-        const horaApertura = horario.hora_apertura;
-        const horaCierre = horario.hora_cierre;
+    const horaError = validateHora();
+    if (horaError) newErrors.hora = horaError;
 
-        // Validar que la hora esté dentro del horario
-        if (horaReserva < horaApertura) {
-          newErrors.hora = `⏰ Antes de la apertura (${horaApertura})`;
-        } else if (horaReserva >= horaCierre) {
-          newErrors.hora = `⏰ Después del cierre (${horaCierre})`;
-        } else {
-          // Validar que la duración de 2 horas no exceda la hora de cierre
-          const [hora, minutos] = horaReserva.split(':').map(Number);
-          const horaPlusDos = `${String(hora + 2).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
-          if (horaPlusDos > horaCierre) {
-            newErrors.hora = `⏱️ La reserva de 2h sobrepasa cierre (${horaCierre})`;
-          }
-        }
-      }
-    }
-
-    if (!formData.mesa || formData.mesa === 0) {
-      newErrors.mesa = 'Debe seleccionar una mesa';
-    }
+    const mesaError = validateMesa();
+    if (mesaError) newErrors.mesa = mesaError;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -183,7 +221,7 @@ function ReservaForm() {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'mesa' ? parseInt(value) : value,
+      [name]: name === 'mesa' ? Number.parseInt(value) : value,
     }));
 
     // Si cambió la fecha, actualizar el horario del día seleccionado
@@ -213,7 +251,7 @@ function ReservaForm() {
 
     try {
       const response = id
-        ? await apiClient.updateReserva(parseInt(id), formData)
+        ? await apiClient.updateReserva(Number.parseInt(id), formData)
         : await apiClient.createReserva(formData);
 
       if (response.success) {

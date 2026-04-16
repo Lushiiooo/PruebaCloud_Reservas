@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { apiClient } from '../services/api';
 
 interface ProtectedRouteProps {
-  children: ReactNode;
+  readonly children: ReactNode;
 }
 
 function ProtectedRoute({ children }: ProtectedRouteProps) {

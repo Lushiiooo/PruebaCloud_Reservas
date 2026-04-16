@@ -29,7 +29,7 @@ HORARIOS = [
 def crear_horarios():
     """Crear los horarios iniciales del restaurante"""
     for horario_data in HORARIOS:
-        horario, created = HorarioRestaurante.objects.get_or_create(
+        _, created = HorarioRestaurante.objects.get_or_create(
             dia_semana=horario_data['dia'],
             defaults={
                 'hora_apertura': time.fromisoformat(horario_data['apertura']),

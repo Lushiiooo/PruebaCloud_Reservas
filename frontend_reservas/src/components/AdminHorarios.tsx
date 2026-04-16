@@ -43,8 +43,8 @@ function AdminHorarios() {
   const handleEdit = (horario: Horario) => {
     setEditingId(horario.id);
     setFormData({
-      hora_apertura: horario.hora_apertura,
-      hora_cierre: horario.hora_cierre,
+      hora_apertura: horario.hora_apertura.substring(0, 5), // HH:MM
+      hora_cierre: horario.hora_cierre.substring(0, 5), // HH:MM
       cerrado: horario.cerrado,
     });
   };
@@ -54,16 +54,30 @@ function AdminHorarios() {
 
     setLoading(true);
     try {
-      const response = await apiClient.updateHorario(editingId, formData);
+      // SIEMPRE enviar los tres campos requeridos
+      const dataToSend = {
+        hora_apertura: formData.hora_apertura ? `${formData.hora_apertura}:00` : '00:00:00',
+        hora_cierre: formData.hora_cierre ? `${formData.hora_cierre}:00` : '00:00:00',
+        cerrado: formData.cerrado || false,
+      };
+
+      console.log('📨 Enviando actualización de horario:', { id: editingId, data: dataToSend });
+      const response = await apiClient.updateHorario(editingId, dataToSend);
+      console.log('🔧 Respuesta de horario:', response);
       if (response.success) {
+        console.log('✅ Horario actualizado exitosamente');
         setEditingId(null);
         setFormData({});
         cargarHorarios();
       } else {
-        setError(response.error || 'Error al actualizar horario');
+        const errorMsg = response.error || 'Error al actualizar horario';
+        console.error('❌ Error en actualización:', errorMsg);
+        setError(errorMsg);
       }
     } catch (err) {
-      setError((err as Error).message);
+      const errorMsg = (err as Error).message;
+      console.error('❌ Error en catch:', errorMsg, err);
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }

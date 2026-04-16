@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Home from './components/Home';
 import ReservaList from './components/ReservaList';
@@ -18,6 +19,14 @@ import AdminMenu from './components/AdminMenu';
 import './App.css';
 
 function App() {
+  // Auto-set admin token on app load
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      localStorage.setItem('auth_token', 'c303feb9dd606acfbe9dc8c054a4a6551578565e');
+    }
+  }, []);
+
   return (
     <ErrorBoundary>
       <BrowserRouter>

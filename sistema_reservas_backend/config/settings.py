@@ -25,12 +25,13 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-6!(ap-)^$55e9*g1kx+e!f-!kp8jti4n_b5r85*a+7^81j0wzk'
+SECRET_KEY = env('SECRET_KEY', default='django-insecure-dev-key-change-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool('DEBUG', default=True)
 
-ALLOWED_HOSTS = []
+# En AWS, leer ALLOWED_HOSTS de variable de entorno
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '*.elasticbeanstalk.com'])
 
 
 # Application definition
@@ -140,11 +141,16 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # CORS Configuration
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=False)
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=['http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173'])
 CORS_ALLOW_CREDENTIALS = True
+
+# CSRF Configuration para AWS
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=['http://localhost:5173', 'http://localhost:5174', 'https://*.elasticbeanstalk.com'])
 
 # REST Framework Configuration
 REST_FRAMEWORK = {

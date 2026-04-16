@@ -232,7 +232,7 @@ function AdminMesas() {
                             type="number"
                             value={editFormData.numero || ''}
                             onChange={(e) =>
-                              setEditFormData({ ...editFormData, numero: e.target.value })
+                              setEditFormData({ ...editFormData, numero: parseInt(e.target.value) || 0 })
                             }
                             className="w-full px-2 py-1 border border-gray-300 rounded bg-white text-gray-900"
                           />
@@ -242,7 +242,7 @@ function AdminMesas() {
                             type="number"
                             value={editFormData.capacidad || ''}
                             onChange={(e) =>
-                              setEditFormData({ ...editFormData, capacidad: e.target.value })
+                              setEditFormData({ ...editFormData, capacidad: parseInt(e.target.value) || 0 })
                             }
                             className="w-full px-2 py-1 border border-gray-300 rounded bg-white text-gray-900"
                           />

@@ -46,6 +46,27 @@ class MesaViewSet(viewsets.ModelViewSet):
 class HorarioRestauranteViewSet(viewsets.ModelViewSet):
     queryset = HorarioRestaurante.objects.all()
     serializer_class = HorarioRestauranteSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def update(self, request, *args, **kwargs):
+        """Manejar errors en actualización"""
+        try:
+            return super().update(request, *args, **kwargs)
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    def partial_update(self, request, *args, **kwargs):
+        """Manejar PATCH requests"""
+        try:
+            return super().partial_update(request, *args, **kwargs)
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
     
     @action(detail=False, methods=['get'])
     def hoy(self, request):
@@ -181,7 +202,7 @@ class OrdenViewSet(viewsets.ModelViewSet):
                         status=status.HTTP_404_NOT_FOUND
                     )
                 
-                orden_item, created = OrdenItem.objects.update_or_create(
+                _, _ = OrdenItem.objects.update_or_create(
                     orden=orden,
                     item_menu=item_menu,
                     defaults={
@@ -226,7 +247,7 @@ def login_view(request):
         login(request, user)
         
         # Obtener o crear token
-        token, created = Token.objects.get_or_create(user=user)
+        token, _ = Token.objects.get_or_create(user=user)
         
         return Response({
             'token': token.key,

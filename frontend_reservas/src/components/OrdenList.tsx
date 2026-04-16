@@ -19,7 +19,7 @@ function OrdenList() {
       // Si es guest, intenta cargar la orden que acaba de crear
       const guestOrdenId = sessionStorage.getItem('guestOrdenId');
       if (guestOrdenId) {
-        cargarOrdenGuest(parseInt(guestOrdenId));
+        cargarOrdenGuest(Number.parseInt(guestOrdenId));
       }
     }
   }, []);
@@ -86,6 +86,67 @@ function OrdenList() {
     }
   };
 
+  const renderOrdenesContent = () => (
+    <div className="overflow-x-auto rounded-lg border border-gray-200">
+      <table className="w-full">
+        <thead className="bg-gray-100 border-b border-gray-200">
+          <tr>
+            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
+            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Cliente</th>
+            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Tipo</th>
+            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Mesa/Retiro</th>
+            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Total</th>
+            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Items</th>
+            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Estado</th>
+            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Fecha</th>
+            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {ordenes.map((orden, index) => (
+            <tr 
+              key={orden.id || index} 
+              className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-b border-gray-200 hover:bg-blue-50 transition`}
+            >
+              <td className="px-6 py-4 text-gray-900 font-medium">#{orden.id}</td>
+              <td className="px-6 py-4 text-gray-600">{orden.nombre_cliente || 'N/A'}</td>
+              <td className="px-6 py-4 text-gray-600">{orden.tipo || 'N/A'}</td>
+              <td className="px-6 py-4 text-gray-600">
+                {orden.tipo === 'Comer en Mesa' 
+                  ? `Mesa ${orden.mesa_numero || 'N/A'}` 
+                  : 'Retiro'}
+              </td>
+              <td className="px-6 py-4 text-gray-900 font-semibold">
+                ${Number.parseFloat(orden.precio_total || '0').toFixed(2)}
+              </td>
+              <td className="px-6 py-4 text-gray-600">
+                <span className="bg-gray-200 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
+                  {(orden.items || []).length} items
+                </span>
+              </td>
+              <td className="px-6 py-4">
+                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getEstadoColor(orden.estado)}`}>
+                  {orden.estado || 'N/A'}
+                </span>
+              </td>
+              <td className="px-6 py-4 text-gray-600 text-sm">
+                {orden.creada_en ? new Date(orden.creada_en).toLocaleDateString('es-ES') : 'N/A'}
+              </td>
+              <td className="px-6 py-4">
+                <Link
+                  to={`/ordenes/${orden.id}`}
+                  className="text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Ver Detalles
+                </Link>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
   // Si no está autenticado, mostrar solo la orden que acaba de crear
   if (!isAuthenticated) {
     const guestOrdenId = sessionStorage.getItem('guestOrdenId');
@@ -120,7 +181,7 @@ function OrdenList() {
                         <td className="px-6 py-4 text-gray-900 font-medium">#{orden.id}</td>
                         <td className="px-6 py-4 text-gray-600">{orden.nombre_cliente}</td>
                         <td className="px-6 py-4 text-gray-600">{orden.tipo}</td>
-                        <td className="px-6 py-4 text-gray-900 font-semibold">${parseFloat(orden.precio_total || '0').toFixed(2)}</td>
+                        <td className="px-6 py-4 text-gray-900 font-semibold">${Number.parseFloat(orden.precio_total || '0').toFixed(2)}</td>
                         <td className="px-6 py-4 text-gray-600">{(orden.items || []).length}</td>
                         <td className="px-6 py-4">
                           <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getEstadoColor(orden.estado)}`}>
@@ -197,66 +258,7 @@ function OrdenList() {
               Hacer tu primera orden
             </Link>
           </div>
-        ) : (
-          <div className="overflow-x-auto rounded-lg border border-gray-200">
-            <table className="w-full">
-              <thead className="bg-gray-100 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Cliente</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Tipo</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Mesa/Retiro</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Total</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Items</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Estado</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Fecha</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ordenes.map((orden, index) => (
-                  <tr 
-                    key={orden.id || index} 
-                    className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-b border-gray-200 hover:bg-blue-50 transition`}
-                  >
-                    <td className="px-6 py-4 text-gray-900 font-medium">#{orden.id}</td>
-                    <td className="px-6 py-4 text-gray-600">{orden.nombre_cliente || 'N/A'}</td>
-                    <td className="px-6 py-4 text-gray-600">{orden.tipo || 'N/A'}</td>
-                    <td className="px-6 py-4 text-gray-600">
-                      {orden.tipo === 'Comer en Mesa' 
-                        ? `Mesa ${orden.mesa_numero || 'N/A'}` 
-                        : 'Retiro'}
-                    </td>
-                    <td className="px-6 py-4 text-gray-900 font-semibold">
-                      ${parseFloat(orden.precio_total || '0').toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">
-                      <span className="bg-gray-200 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
-                        {(orden.items || []).length} items
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getEstadoColor(orden.estado)}`}>
-                        {orden.estado || 'N/A'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">
-                      {orden.creada_en ? new Date(orden.creada_en).toLocaleDateString('es-ES') : 'N/A'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <Link
-                        to={`/ordenes/${orden.id}`}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        Ver Detalles
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        ) : renderOrdenesContent()}
       </div>
     </div>
   );

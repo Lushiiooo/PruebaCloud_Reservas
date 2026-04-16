@@ -22,7 +22,7 @@ orden_data = {
     'fecha_hora_retiro': None,
 }
 
-print(f"\nDatos enviados:")
+print("\nDatos enviados:")
 print(json.dumps(orden_data, indent=2))
 
 serializer = OrdenSerializer(data=orden_data)
@@ -51,7 +51,7 @@ orden_data2 = {
     'fecha_hora_retiro': None,
 }
 
-print(f"\nDatos enviados:")
+print("\nDatos enviados:")
 print(json.dumps(orden_data2, indent=2))
 
 serializer2 = OrdenSerializer(data=orden_data2)
