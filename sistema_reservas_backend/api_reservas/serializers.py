@@ -14,7 +14,7 @@ class HorarioRestauranteSerializer(serializers.ModelSerializer):
     class Meta:
         model = HorarioRestaurante
         fields = ['id', 'dia_semana', 'hora_apertura', 'hora_cierre', 'cerrado', 'actualizado_en']
-        read_only_fields = ['actualizado_en', 'id']
+        read_only_fields = ['actualizado_en', 'id', 'dia_semana']
 
 
 class ReservaSerializer(serializers.ModelSerializer):
@@ -37,7 +37,7 @@ class ReservaSerializer(serializers.ModelSerializer):
                 timezone.datetime.combine(fecha, hora)
             )
             
-            if fecha_hora <= now + timedelta(hours=1):
+            if fecha_hora < now + timedelta(hours=1):
                 raise serializers.ValidationError(
                     "La reserva debe ser al menos 1 hora en el futuro."
                 )
@@ -104,14 +104,25 @@ class OrdenSerializer(serializers.ModelSerializer):
     def validate(self, data):
         tipo = data.get('tipo')
         mesa = data.get('mesa')
+        fecha_hora_retiro = data.get('fecha_hora_retiro')
         
         # Si es "Comer en Mesa", debe haber mesa seleccionada
         if tipo == 'Comer en Mesa':
             if not mesa:
                 raise serializers.ValidationError("Debe seleccionar una mesa para 'Comer en Mesa'")
         
-        # Si es "Para Retirar", asegurar que mesa es None
+        # Si es "Para Retirar", validar fecha_hora_retiro y asegurar que mesa es None
         if tipo == 'Para Retirar':
+            if not fecha_hora_retiro:
+                raise serializers.ValidationError("Debe especificar fecha y hora de retiro para 'Para Retirar'")
+            
+            # Validar que la fecha/hora de retiro sea en el futuro
+            now = timezone.now()
+            if fecha_hora_retiro < now + timedelta(hours=1):
+                raise serializers.ValidationError(
+                    "La fecha de retiro debe ser al menos 1 hora en el futuro."
+                )
+            
             data['mesa'] = None
         
         return data
