@@ -83,9 +83,9 @@ class OrdenSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'precio_total', 'creada_en', 'actualizada_en']
     
     def validate_telefono(self, value):
-        # Validar que el teléfono tenga al menos 7 caracteres
-        if value and len(str(value)) < 7:
-            raise serializers.ValidationError("Teléfono inválido. Mínimo 7 dígitos.")
+        # Validar que el teléfono sea requerido y tenga al menos 7 caracteres
+        if not value or len(str(value)) < 7:
+            raise serializers.ValidationError("Teléfono es requerido. Mínimo 7 dígitos.")
         return value
     
     def validate_nombre_cliente(self, value):

@@ -134,7 +134,7 @@ function OrdenForm() {
       errors.nombre_cliente = 'El nombre es requerido';
     }
     if (!formData.telefono || formData.telefono.length < 7) {
-      errors.telefono = 'Teléfono inválido';
+      errors.telefono = 'Teléfono es requerido. Mínimo 7 dígitos.';
     }
     if (formData.tipo === 'Comer en Mesa' && !formData.mesa) {
       errors.mesa = 'Debe seleccionar una mesa';
@@ -240,7 +240,7 @@ function OrdenForm() {
                     <h3 className="text-xl font-bold text-gray-800">{item.nombre}</h3>
                     <p className="text-gray-600 text-sm mt-1">{item.descripcion}</p>
                     <div className="flex justify-between items-center mt-4">
-                      <span className="text-2xl font-bold text-blue-600">${(typeof item.precio === 'string' ? parseFloat(item.precio) : item.precio).toFixed(2)}</span>
+                      <span className="text-2xl font-bold text-blue-600">${(typeof item.precio === 'string' ? Number.parseFloat(item.precio) : item.precio).toFixed(2)}</span>
                       <button
                         onClick={() => agregarAlCarrito(item)}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-semibold transition"
@@ -268,7 +268,7 @@ function OrdenForm() {
                       <div key={item.id} className="flex justify-between items-center border-b pb-2">
                         <div className="flex-1">
                           <p className="font-semibold text-gray-700">{item.nombre}</p>
-                          <p className="text-gray-500 text-sm">${(typeof item.precio === 'string' ? parseFloat(item.precio) : item.precio).toFixed(2)}</p>
+                          <p className="text-gray-500 text-sm">${(typeof item.precio === 'string' ? Number.parseFloat(item.precio) : item.precio).toFixed(2)}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <button
@@ -344,7 +344,7 @@ function OrdenForm() {
                   <>
                     <select
                       value={formData.mesa || ''}
-                      onChange={(e) => setFormData({ ...formData, mesa: parseInt(e.target.value) })}
+                      onChange={(e) => setFormData({ ...formData, mesa: Number.parseInt(e.target.value) })}
                       className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-white text-gray-900"
                     >
                       <option value="">Seleccionar Mesa</option>
