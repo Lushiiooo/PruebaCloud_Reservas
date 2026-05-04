@@ -165,3 +165,29 @@ REST_FRAMEWORK = {
 # Token expiration
 import datetime
 TOKEN_EXPIRE_AFTER = datetime.timedelta(days=1)
+
+# Redis Cache Configuration
+REDIS_URL = env('REDIS_URL', default='redis://localhost:6379/1')
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'SOCKET_CONNECT_TIMEOUT': 5,
+            'SOCKET_TIMEOUT': 5,
+            'IGNORE_EXCEPTIONS': True,
+        },
+        'KEY_PREFIX': 'reservas',
+        'TIMEOUT': 300,  # 5 minutes default TTL
+    }
+}
+
+# Celery Configuration
+CELERY_BROKER_URL = env('REDIS_URL', default='redis://localhost:6379/1')
+CELERY_RESULT_BACKEND = env('REDIS_URL', default='redis://localhost:6379/1')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE

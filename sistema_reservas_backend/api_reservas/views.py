@@ -7,8 +7,14 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.views.decorators.csrf import csrf_exempt
+from django.core.cache import cache
 from .models import Mesa, HorarioRestaurante, Reserva, MenuItem, Orden, OrdenItem
 from .serializers import MesaSerializer, HorarioRestauranteSerializer, ReservaSerializer, MenuItemSerializer, OrdenSerializer, OrdenItemSerializer
+from .tasks import procesar_reserva
+
+MENU_CACHE_KEY = 'menu:list:all'
+MENU_STAFF_CACHE_KEY = 'menu:list:staff'
+MENU_CACHE_TTL = 300  # 5 minutes
 
 
 class MesaViewSet(viewsets.ModelViewSet):
@@ -92,12 +98,23 @@ class ReservaViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         try:
-            return super().create(request, *args, **kwargs)
+            response = super().create(request, *args, **kwargs)
         except Exception as e:
             return Response(
                 {'error': str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        # Enviar tarea a Celery para procesar la reserva en segundo plano.
+        # Se intenta de forma asíncrona; un fallo del broker no afecta la respuesta.
+        try:
+            reserva_id = response.data.get('id')
+            if reserva_id is not None:
+                procesar_reserva.delay(reserva_id)
+        except Exception:
+            pass
+
+        return response
     
     def update(self, request, *args, **kwargs):
         try:
@@ -111,7 +128,22 @@ class ReservaViewSet(viewsets.ModelViewSet):
 
 class MenuItemViewSet(viewsets.ModelViewSet):
     serializer_class = MenuItemSerializer
-    
+
+    def _cache_key_for_user(self, is_staff):
+        return MENU_STAFF_CACHE_KEY if is_staff else MENU_CACHE_KEY
+
+    def _invalidate_menu_cache(self):
+        """Invalida las claves de caché del menú sin borrar toda la caché."""
+        keys_to_delete = [MENU_CACHE_KEY, MENU_STAFF_CACHE_KEY]
+
+        # Invalidar caché de por_categoria para todas las categorías conocidas
+        categorias = [choice[0] for choice in MenuItem.CATEGORIA_CHOICES] + ['all']
+        for categoria in categorias:
+            for role in ('public', 'staff'):
+                keys_to_delete.append(f'menu:categoria:{categoria}:{role}')
+
+        cache.delete_many(keys_to_delete)
+
     def get_queryset(self):
         # Admin ve todos los items, usuarios normales solo ven disponibles
         if self.request.user and self.request.user.is_staff:
@@ -128,13 +160,52 @@ class MenuItemViewSet(viewsets.ModelViewSet):
         else:
             permission_classes = []
         return [permission() for permission in permission_classes]
-    
+
+    def list(self, request, *args, **kwargs):
+        is_staff = bool(request.user and request.user.is_staff)
+        cache_key = self._cache_key_for_user(is_staff)
+
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+
+        response = super().list(request, *args, **kwargs)
+        if response.status_code == 200:
+            cache.set(cache_key, response.data, MENU_CACHE_TTL)
+        return response
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        self._invalidate_menu_cache()
+        return response
+
+    def update(self, request, *args, **kwargs):
+        response = super().update(request, *args, **kwargs)
+        self._invalidate_menu_cache()
+        return response
+
+    def partial_update(self, request, *args, **kwargs):
+        response = super().partial_update(request, *args, **kwargs)
+        self._invalidate_menu_cache()
+        return response
+
+    def destroy(self, request, *args, **kwargs):
+        response = super().destroy(request, *args, **kwargs)
+        self._invalidate_menu_cache()
+        return response
+
     @action(detail=False, methods=['get'])
     def por_categoria(self, request):
         categoria = request.query_params.get('categoria')
-        
+        is_staff = bool(request.user and request.user.is_staff)
+
+        cache_key = f'menu:categoria:{categoria or "all"}:{"staff" if is_staff else "public"}'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+
         # Admin ve todos, usuarios normales solo disponibles
-        if request.user and request.user.is_staff:
+        if is_staff:
             if categoria:
                 items = MenuItem.objects.filter(categoria=categoria)
             else:
@@ -146,8 +217,8 @@ class MenuItemViewSet(viewsets.ModelViewSet):
                 items = MenuItem.objects.filter(disponible=True)
         
         serializer = MenuItemSerializer(items, many=True)
+        cache.set(cache_key, serializer.data, MENU_CACHE_TTL)
         return Response(serializer.data)
-
 
 class OrdenViewSet(viewsets.ModelViewSet):
     queryset = Orden.objects.all()
